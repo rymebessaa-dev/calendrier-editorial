@@ -95,6 +95,27 @@
           <p class="list-description">Retrouve et organise tes publications par date, réseau et statut.</p>
           <span id="publication-count" class="count-badge" aria-label="0 publication affichée ce mois-ci">0</span>
         </div>
+
+        <div class="month-stats">
+          <div class="status-counters" role="group" aria-label="Compteurs du mois par statut. Cliquer pour filtrer.">
+            <button type="button" class="status-counter status-idee" data-status="Idée" aria-pressed="false">
+              <span class="counter-label"><span class="status-dot status-idee" aria-hidden="true"></span>Idées</span>
+              <strong class="counter-value">0</strong>
+            </button>
+            <button type="button" class="status-counter status-redige" data-status="Rédigé" aria-pressed="false">
+              <span class="counter-label"><span class="status-dot status-redige" aria-hidden="true"></span>Rédigées</span>
+              <strong class="counter-value">0</strong>
+            </button>
+            <button type="button" class="status-counter status-publie" data-status="Publié" aria-pressed="false">
+              <span class="counter-label"><span class="status-dot status-publie" aria-hidden="true"></span>Publiées</span>
+              <strong class="counter-value">0</strong>
+            </button>
+          </div>
+          <div class="month-progress">
+            <div class="month-progress-track" aria-hidden="true"><span id="month-progress-fill"></span></div>
+            <span id="month-progress-label">Aucune publication ce mois-ci</span>
+          </div>
+        </div>
         <div class="calendar-filters" role="group" aria-label="Filtres des publications">
           <div class="filter-field">
             <label for="network-filter">Réseau</label>
@@ -155,7 +176,7 @@
       </section>
     </div>
 
-    <p class="page-footnote">Les publications de cette session ne sont pas encore sauvegardées.</p>
+    <p id="save-status" class="page-footnote" role="status">Tes publications sont sauvegardées automatiquement dans ce navigateur.</p>
   </main>
 
   <script src="script.js"></script>
