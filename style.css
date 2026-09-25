@@ -340,7 +340,99 @@ select:focus {
 .list-description {
   margin: 0;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
+}
+
+.month-stats {
+  margin-bottom: 14px;
+}
+
+.status-counters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.status-counter {
+  min-width: 0;
+  padding: 10px 12px 9px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  transition: border-color 150ms ease, background 150ms ease, transform 150ms ease;
+}
+
+.status-counter:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--status-color) 45%, transparent);
+}
+
+.status-counter[aria-pressed="true"] {
+  border-color: var(--status-color);
+  background: color-mix(in srgb, var(--status-color) 8%, #fff);
+}
+
+.status-counter:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--status-color) 35%, transparent);
+  outline-offset: 2px;
+}
+
+.counter-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.counter-value {
+  color: var(--status-color);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 26px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.month-progress {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.month-progress-track {
+  height: 6px;
+  flex: 1;
+  overflow: hidden;
+  border-radius: 20px;
+  background: #ecebe4;
+}
+
+#month-progress-fill {
+  width: 0;
+  height: 100%;
+  display: block;
+  border-radius: inherit;
+  background: var(--status-publie);
+  transition: width 300ms ease;
+}
+
+#month-progress-label {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
 }
 
 .calendar-filters {
@@ -427,7 +519,7 @@ select:focus {
   border: 1px dashed #d9d8cf;
   border-radius: 6px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 11px;
   text-align: center;
 }
 
@@ -452,7 +544,7 @@ select:focus {
   align-items: center;
   gap: 5px;
   color: #65675e;
-  font-size: 9px;
+  font-size: 10px;
 }
 
 .legend-dot {
@@ -536,7 +628,7 @@ select:focus {
   border-bottom: 1px solid var(--line);
   background: #f8f8f4;
   color: #777970;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.5px;
   text-align: center;
@@ -548,7 +640,7 @@ select:focus {
 }
 
 .calendar-day {
-  height: 111px;
+  height: 118px;
   padding: 6px;
   vertical-align: top;
   background: #fffefa;
@@ -575,7 +667,7 @@ select:focus {
 
 .calendar-date-number {
   color: #3c3e37;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 650;
 }
 
@@ -590,8 +682,8 @@ select:focus {
 }
 
 .is-today .calendar-date-number {
-  width: 19px;
-  height: 19px;
+  width: 21px;
+  height: 21px;
   display: grid;
   place-items: center;
   border-radius: 50%;
@@ -621,7 +713,7 @@ select:focus {
 .event-network {
   margin-bottom: 2px;
   color: var(--network-color);
-  font-size: 7px;
+  font-size: 8px;
   font-weight: 750;
   letter-spacing: 0.3px;
   white-space: nowrap;
@@ -629,7 +721,7 @@ select:focus {
 
 .event-subject {
   display: -webkit-box;
-  font-size: 9px;
+  font-size: 10px;
   line-height: 1.25;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -716,9 +808,29 @@ select:focus {
 
 .page-footnote {
   margin: 15px 2px 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
   color: #898a82;
-  font-size: 10px;
-  text-align: right;
+  font-size: 11px;
+}
+
+.page-footnote::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--green);
+}
+
+.page-footnote.is-error {
+  color: #9d4935;
+}
+
+.page-footnote.is-error::before {
+  background: #9d4935;
 }
 
 .is-hidden {
@@ -822,11 +934,32 @@ select:focus {
   }
 
   .event-network {
-    font-size: 6px;
+    font-size: 7px;
   }
 
   .event-subject {
+    font-size: 9px;
+  }
+
+  .status-counters {
+    gap: 6px;
+  }
+
+  .status-counter {
+    padding: 8px 9px;
+  }
+
+  .counter-label {
     font-size: 8px;
+    letter-spacing: 0.5px;
+  }
+
+  .counter-value {
+    font-size: 22px;
+  }
+
+  .page-footnote {
+    justify-content: flex-start;
   }
 }
 

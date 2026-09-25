@@ -11,9 +11,14 @@ const nextMonthButton = document.querySelector("#next-month");
 const networkFilter = document.querySelector("#network-filter");
 const statusFilter = document.querySelector("#status-filter");
 const resetFiltersButton = document.querySelector("#reset-filters");
+const statusCounters = document.querySelectorAll(".status-counter");
+const monthProgressFill = document.querySelector("#month-progress-fill");
+const monthProgressLabel = document.querySelector("#month-progress-label");
+const saveStatus = document.querySelector("#save-status");
 
-const publications = [];
+const STORAGE_KEY = "calendrier-editorial.publications";
 const statuses = ["Idée", "Rédigé", "Publié"];
+const publications = loadPublications();
 const networkClassNames = {
   Instagram: "network-instagram",
   LinkedIn: "network-linkedin",
@@ -27,6 +32,38 @@ const statusClassNames = {
   Publié: "status-publie",
 };
 let viewedMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+
+function isValidPublication(publication) {
+  return Boolean(publication)
+    && typeof publication.id === "string"
+    && /^\d{4}-\d{2}-\d{2}$/.test(publication.date)
+    && typeof publication.network === "string"
+    && typeof publication.subject === "string"
+    && statuses.includes(publication.status);
+}
+
+function loadPublications() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    if (!Array.isArray(saved)) return [];
+    return saved
+      .filter(isValidPublication)
+      .map((publication) => ({ ...publication, format: publication.format || "" }));
+  } catch {
+    return [];
+  }
+}
+
+function savePublications() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(publications));
+    saveStatus.textContent = "Tes publications sont sauvegardées automatiquement dans ce navigateur.";
+    saveStatus.classList.remove("is-error");
+  } catch {
+    saveStatus.textContent = "Sauvegarde impossible dans ce navigateur : tes publications seront perdues à la fermeture de la page.";
+    saveStatus.classList.add("is-error");
+  }
+}
 
 function formatDateParts(dateValue) {
   const [year, month, day] = dateValue.split("-").map(Number);
@@ -87,6 +124,7 @@ function createCalendarEvent(publication, dateParts) {
   statusControl.value = publication.status;
   statusControl.addEventListener("change", () => {
     publication.status = statusControl.value;
+    savePublications();
     renderCalendar();
     formFeedback.textContent = `Statut de « ${publication.subject} » mis à jour : ${publication.status}.`;
   });
@@ -101,6 +139,7 @@ function createCalendarEvent(publication, dateParts) {
     const index = publications.findIndex((entry) => entry.id === publication.id);
     if (index !== -1) {
       publications.splice(index, 1);
+      savePublications();
       renderCalendar();
       formFeedback.textContent = "Publication supprimée.";
     }
@@ -200,6 +239,29 @@ function renderCalendar() {
     ? `Aucun résultat pour ces filtres en ${monthLabel}.`
     : `Aucune publication prévue en ${monthLabel}. Ajoute un contenu pour le voir apparaître ici.`;
   calendarEmptyState.classList.toggle("is-hidden", publicationsInMonth > 0);
+  renderMonthStats(year, month);
+}
+
+function renderMonthStats(year, month) {
+  const monthPrefix = `${year}-${String(month + 1).padStart(2, "0")}-`;
+  const monthPublications = publications.filter((publication) => publication.date.startsWith(monthPrefix));
+  const total = monthPublications.length;
+
+  for (const counter of statusCounters) {
+    const status = counter.dataset.status;
+    const count = monthPublications.filter((publication) => publication.status === status).length;
+    const isSelected = statusFilter.value === status;
+    counter.querySelector(".counter-value").textContent = String(count);
+    counter.setAttribute("aria-pressed", String(isSelected));
+    counter.title = isSelected ? "Afficher tous les statuts" : `Afficher uniquement : ${status}`;
+  }
+
+  const published = monthPublications.filter((publication) => publication.status === "Publié").length;
+  const percent = total ? Math.round((published / total) * 100) : 0;
+  monthProgressFill.style.width = `${percent}%`;
+  monthProgressLabel.textContent = total
+    ? `${published} sur ${total} publiée${published === 1 ? "" : "s"} · ${percent} %`
+    : "Aucune publication ce mois-ci";
 }
 
 function getLocalDateValue(date = new Date()) {
@@ -227,6 +289,14 @@ nextMonthButton.addEventListener("click", () => {
 
 networkFilter.addEventListener("change", renderCalendar);
 statusFilter.addEventListener("change", renderCalendar);
+
+for (const counter of statusCounters) {
+  counter.addEventListener("click", () => {
+    const status = counter.dataset.status;
+    statusFilter.value = statusFilter.value === status ? "" : status;
+    renderCalendar();
+  });
+}
 
 resetFiltersButton.addEventListener("click", () => {
   networkFilter.value = "";
@@ -258,6 +328,7 @@ form.addEventListener("submit", (event) => {
   }
 
   publications.push(publication);
+  savePublications();
   networkFilter.value = "";
   statusFilter.value = "";
   const [year, month] = publication.date.split("-").map(Number);
