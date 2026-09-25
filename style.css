@@ -12,6 +12,11 @@
   --green: #406c50;
   --green-dark: #31543d;
   --paper: #fffefa;
+  --network-instagram: #bd397a;
+  --network-linkedin: #2867a8;
+  --network-tiktok: #252525;
+  --network-facebook: #3769b1;
+  --network-x: #252525;
 }
 
 * {
@@ -238,12 +243,78 @@ select:focus {
   font-size: 10px;
 }
 
-.list-panel {
-  min-height: 350px;
+.calendar-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 17px;
 }
 
-.list-heading {
-  margin-bottom: 9px;
+.calendar-heading .eyebrow {
+  margin-bottom: 8px;
+}
+
+.calendar-heading h2 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 23px;
+  font-weight: 500;
+  letter-spacing: -0.5px;
+  text-transform: capitalize;
+}
+
+.month-controls {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 5px;
+}
+
+.month-button,
+.current-month-button {
+  min-height: 32px;
+  border: 1px solid #e7e7df;
+  border-radius: 5px;
+  background: #fff;
+  color: #42443c;
+  cursor: pointer;
+  font: inherit;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.month-button {
+  width: 32px;
+  padding: 0;
+  font-size: 16px;
+}
+
+.current-month-button {
+  padding: 0 9px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.month-button:hover,
+.current-month-button:hover {
+  border-color: #c9d5c9;
+  background: #f3f6f1;
+}
+
+.month-button:focus-visible,
+.current-month-button:focus-visible,
+.calendar-scroll:focus-visible,
+.event-remove:focus-visible {
+  outline: 3px solid rgba(64, 108, 80, 0.35);
+  outline-offset: 2px;
+}
+
+.calendar-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 13px;
 }
 
 .count-badge {
@@ -264,9 +335,9 @@ select:focus {
 }
 
 .list-description {
-  margin-bottom: 18px;
+  margin: 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .feedback {
@@ -280,131 +351,205 @@ select:focus {
   margin: 0 0 11px;
 }
 
-.publication-list {
-  display: grid;
-  gap: 10px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.publication-card {
-  display: grid;
-  grid-template-columns: 48px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 13px;
-  padding: 13px 12px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #fff;
-  animation: appear 180ms ease-out;
-}
-
-.date-tile {
-  width: 48px;
-  min-height: 49px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  background: #f2f3ee;
-  color: var(--green-dark);
-}
-
-.date-day {
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 19px;
-  line-height: 1;
-}
-
-.date-month {
-  margin-top: 4px;
-  font-size: 8px;
-  font-weight: 700;
-  letter-spacing: 0.9px;
-  text-transform: uppercase;
-}
-
-.publication-details {
-  min-width: 0;
-}
-
-.publication-subject {
-  overflow: hidden;
-  margin: 0 0 5px;
-  color: #292a25;
-  font-size: 12px;
-  font-weight: 650;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.publication-meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
+.calendar-empty-state {
+  margin: 0 0 10px;
   color: var(--muted);
   font-size: 10px;
 }
 
-.network-tag {
-  padding: 3px 7px;
-  border-radius: 20px;
-  background: #edf2eb;
-  color: var(--green-dark);
+.calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px 14px;
+  margin: 0 0 13px;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #65675e;
+  font-size: 9px;
+}
+
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+
+.network-instagram {
+  --network-color: var(--network-instagram);
+  --network-soft: #f8eaf1;
+}
+
+.network-linkedin {
+  --network-color: var(--network-linkedin);
+  --network-soft: #eaf1f8;
+}
+
+.network-tiktok {
+  --network-color: var(--network-tiktok);
+  --network-soft: #eeeeee;
+}
+
+.network-facebook {
+  --network-color: var(--network-facebook);
+  --network-soft: #ebf0f9;
+}
+
+.network-x {
+  --network-color: var(--network-x);
+  --network-soft: #eeeeed;
+}
+
+.legend-dot {
+  background: var(--network-color);
+}
+
+.calendar-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  scrollbar-color: #c7c9bf #f4f4f0;
+  scrollbar-width: thin;
+}
+
+.calendar-table {
+  width: 100%;
+  min-width: 610px;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.calendar-table th {
+  height: 34px;
+  border-bottom: 1px solid var(--line);
+  background: #f8f8f4;
+  color: #777970;
   font-size: 9px;
   font-weight: 700;
-}
-
-.remove-button {
-  padding: 6px;
-  border: 0;
-  border-radius: 5px;
-  background: transparent;
-  color: #898a81;
-  cursor: pointer;
-  font: inherit;
-  font-size: 10px;
-}
-
-.remove-button:hover {
-  background: #f8eeea;
-  color: #a34f37;
-}
-
-.empty-state {
-  min-height: 160px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: #87887e;
+  letter-spacing: 0.5px;
   text-align: center;
 }
 
-.empty-icon {
-  width: 34px;
-  height: 34px;
-  margin-bottom: 10px;
+.calendar-table th + th,
+.calendar-table td + td {
+  border-left: 1px solid var(--line);
+}
+
+.calendar-day {
+  height: 111px;
+  padding: 6px;
+  vertical-align: top;
+  background: #fffefa;
+}
+
+.calendar-table tbody tr + tr .calendar-day {
+  border-top: 1px solid var(--line);
+}
+
+.calendar-day.is-adjacent-month {
+  background: #fafaf7;
+}
+
+.calendar-day.is-today {
+  background: #f2f6ef;
+}
+
+.calendar-day-heading {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 15px;
+}
+
+.calendar-date-number {
+  color: #3c3e37;
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.is-adjacent-month .calendar-date-number,
+.adjacent-month-name {
+  color: #a0a197;
+}
+
+.adjacent-month-name {
+  font-size: 8px;
+  text-transform: lowercase;
+}
+
+.is-today .calendar-date-number {
+  width: 19px;
+  height: 19px;
   display: grid;
   place-items: center;
-  border: 1px solid #e8e8df;
   border-radius: 50%;
-  color: var(--green);
-  font-size: 15px;
+  background: var(--green);
+  color: white;
 }
 
-.empty-state p {
-  margin-bottom: 5px;
-  color: #484a42;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 16px;
+.calendar-event {
+  position: relative;
+  margin-top: 5px;
+  padding: 4px 17px 5px 6px;
+  overflow: hidden;
+  border-left: 3px solid var(--network-color);
+  border-radius: 3px;
+  background: var(--network-soft);
+  color: #30322d;
+  animation: appear 180ms ease-out;
 }
 
-.empty-state > span:last-child {
-  font-size: 11px;
+.event-network,
+.event-subject {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.event-network {
+  margin-bottom: 2px;
+  color: var(--network-color);
+  font-size: 7px;
+  font-weight: 750;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.event-subject {
+  display: -webkit-box;
+  font-size: 9px;
+  line-height: 1.25;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.event-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: #66685f;
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.event-remove:hover {
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  color: #9d4935;
 }
 
 .page-footnote {
@@ -441,10 +586,6 @@ select:focus {
   .panel {
     padding: 22px;
   }
-
-  .list-panel {
-    min-height: 280px;
-  }
 }
 
 @media (max-width: 420px) {
@@ -454,18 +595,55 @@ select:focus {
     text-align: right;
   }
 
-  .publication-card {
-    grid-template-columns: 43px minmax(0, 1fr) auto;
-    gap: 9px;
-    padding: 11px 9px;
+  .calendar-panel {
+    padding: 17px 13px;
   }
 
-  .date-tile {
-    width: 43px;
+  .calendar-heading {
+    align-items: flex-start;
+    gap: 8px;
   }
 
-  .remove-button {
+  .calendar-heading h2 {
+    font-size: 19px;
+  }
+
+  .month-controls {
+    gap: 3px;
+  }
+
+  .month-button {
+    width: 29px;
+  }
+
+  .current-month-button {
+    padding: 0 6px;
     font-size: 9px;
+  }
+
+  .calendar-legend {
+    gap: 7px 9px;
+  }
+
+  .calendar-table {
+    min-width: 560px;
+  }
+
+  .calendar-day {
+    height: 102px;
+    padding: 4px;
+  }
+
+  .calendar-event {
+    padding-left: 4px;
+  }
+
+  .event-network {
+    font-size: 6px;
+  }
+
+  .event-subject {
+    font-size: 8px;
   }
 }
 
