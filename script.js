@@ -8,14 +8,23 @@ const calendarEmptyState = document.querySelector("#calendar-empty-state");
 const previousMonthButton = document.querySelector("#previous-month");
 const currentMonthButton = document.querySelector("#current-month");
 const nextMonthButton = document.querySelector("#next-month");
+const networkFilter = document.querySelector("#network-filter");
+const statusFilter = document.querySelector("#status-filter");
+const resetFiltersButton = document.querySelector("#reset-filters");
 
 const publications = [];
+const statuses = ["Idée", "Rédigé", "Publié"];
 const networkClassNames = {
   Instagram: "network-instagram",
   LinkedIn: "network-linkedin",
   TikTok: "network-tiktok",
   Facebook: "network-facebook",
   X: "network-x",
+};
+const statusClassNames = {
+  Idée: "status-idee",
+  Rédigé: "status-redige",
+  Publié: "status-publie",
 };
 let viewedMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
@@ -45,11 +54,15 @@ function networkClass(network) {
   return networkClassNames[network] || "network-x";
 }
 
+function statusClass(status) {
+  return statusClassNames[status] || "status-idee";
+}
+
 function createCalendarEvent(publication, dateParts) {
   const event = document.createElement("article");
-  event.className = `calendar-event ${networkClass(publication.network)}`;
+  event.className = `calendar-event ${networkClass(publication.network)} ${statusClass(publication.status)}`;
   event.setAttribute("aria-label", `${publication.network} : ${publication.subject}, ${dateParts.full}`);
-  event.title = `${publication.network} — ${publication.subject}${publication.format ? ` · ${publication.format}` : ""}`;
+  event.title = `${publication.network} — ${publication.subject}${publication.format ? ` · ${publication.format}` : ""} · ${publication.status}`;
 
   const network = document.createElement("span");
   network.className = "event-network";
@@ -58,6 +71,25 @@ function createCalendarEvent(publication, dateParts) {
   const subject = document.createElement("span");
   subject.className = "event-subject";
   subject.textContent = publication.subject;
+
+  const statusControl = document.createElement("select");
+  statusControl.className = `event-status-control ${statusClass(publication.status)}`;
+  statusControl.setAttribute("aria-label", `Statut de la publication : ${publication.subject}`);
+
+  for (const status of statuses) {
+    const option = document.createElement("option");
+    option.value = status;
+    option.textContent = status;
+    option.selected = status === publication.status;
+    statusControl.append(option);
+  }
+
+  statusControl.value = publication.status;
+  statusControl.addEventListener("change", () => {
+    publication.status = statusControl.value;
+    renderCalendar();
+    formFeedback.textContent = `Statut de « ${publication.subject} » mis à jour : ${publication.status}.`;
+  });
 
   const removeButton = document.createElement("button");
   removeButton.className = "event-remove";
@@ -74,7 +106,7 @@ function createCalendarEvent(publication, dateParts) {
     }
   });
 
-  event.append(network, subject, removeButton);
+  event.append(network, subject, statusControl, removeButton);
   return event;
 }
 
@@ -87,22 +119,27 @@ function renderCalendar() {
   }).format(viewedMonth);
   calendarMonthTitle.textContent = monthLabel;
   calendarDays.replaceChildren();
-  publicationCount.textContent = String(publications.length);
-  publicationCount.setAttribute(
-    "aria-label",
-    `${publications.length} publication${publications.length === 1 ? "" : "s"} au total`,
-  );
 
   const firstWeekday = (new Date(year, month, 1).getDay() + 6) % 7;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const numberOfCells = Math.ceil((firstWeekday + daysInMonth) / 7) * 7;
   const publicationsByDate = new Map();
+  const visiblePublications = publications.filter((publication) => {
+    const matchesNetwork = !networkFilter.value || publication.network === networkFilter.value;
+    const matchesStatus = !statusFilter.value || publication.status === statusFilter.value;
+    return matchesNetwork && matchesStatus;
+  });
 
-  for (const publication of publications) {
+  for (const publication of visiblePublications) {
     const datePublications = publicationsByDate.get(publication.date) || [];
     datePublications.push(publication);
     publicationsByDate.set(publication.date, datePublications);
   }
+
+  const hasActiveFilter = Boolean(networkFilter.value || statusFilter.value);
+  networkFilter.classList.toggle("is-active", Boolean(networkFilter.value));
+  statusFilter.classList.toggle("is-active", Boolean(statusFilter.value));
+  resetFiltersButton.classList.toggle("is-hidden", !hasActiveFilter);
 
   const todayValue = getLocalDateValue();
   let publicationsInMonth = 0;
@@ -154,7 +191,14 @@ function renderCalendar() {
     calendarDays.append(row);
   }
 
-  calendarEmptyState.textContent = `Aucune publication prévue en ${monthLabel}. Ajoute un contenu pour le voir apparaître ici.`;
+  publicationCount.textContent = String(publicationsInMonth);
+  publicationCount.setAttribute(
+    "aria-label",
+    `${publicationsInMonth} publication${publicationsInMonth === 1 ? "" : "s"} affichée${publicationsInMonth === 1 ? "" : "s"} ce mois-ci`,
+  );
+  calendarEmptyState.textContent = hasActiveFilter
+    ? `Aucun résultat pour ces filtres en ${monthLabel}.`
+    : `Aucune publication prévue en ${monthLabel}. Ajoute un contenu pour le voir apparaître ici.`;
   calendarEmptyState.classList.toggle("is-hidden", publicationsInMonth > 0);
 }
 
@@ -181,6 +225,16 @@ nextMonthButton.addEventListener("click", () => {
   renderCalendar();
 });
 
+networkFilter.addEventListener("change", renderCalendar);
+statusFilter.addEventListener("change", renderCalendar);
+
+resetFiltersButton.addEventListener("click", () => {
+  networkFilter.value = "";
+  statusFilter.value = "";
+  renderCalendar();
+  networkFilter.focus();
+});
+
 form.addEventListener("submit", (event) => {
   event.preventDefault();
 
@@ -204,6 +258,8 @@ form.addEventListener("submit", (event) => {
   }
 
   publications.push(publication);
+  networkFilter.value = "";
+  statusFilter.value = "";
   const [year, month] = publication.date.split("-").map(Number);
   viewedMonth = new Date(year, month - 1, 1);
   renderCalendar();
