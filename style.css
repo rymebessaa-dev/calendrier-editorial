@@ -17,6 +17,9 @@
   --network-tiktok: #252525;
   --network-facebook: #3769b1;
   --network-x: #252525;
+  --status-idee: #7d7f75;
+  --status-redige: #b0661c;
+  --status-publie: #406c50;
 }
 
 * {
@@ -232,7 +235,7 @@ select:focus {
 }
 
 .submit-button:focus-visible,
-.remove-button:focus-visible {
+.reset-filters-button:focus-visible {
   outline: 3px solid rgba(64, 108, 80, 0.35);
   outline-offset: 2px;
 }
@@ -340,6 +343,69 @@ select:focus {
   font-size: 11px;
 }
 
+.calendar-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  align-items: end;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8f8f4;
+}
+
+.filter-field label {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+
+.filter-field select {
+  height: 32px;
+  padding: 0 28px 0 10px;
+  appearance: none;
+  border-radius: 5px;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23777970' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 11px center;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.filter-field select:hover {
+  border-color: #c9d5c9;
+}
+
+.filter-field select.is-active {
+  border-color: var(--green);
+  background-color: #edf2eb;
+  color: var(--green-dark);
+  font-weight: 650;
+}
+
+.reset-filters-button {
+  height: 32px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--green);
+  cursor: pointer;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: background 150ms ease;
+}
+
+.reset-filters-button:hover {
+  background: #edf2eb;
+}
+
 .feedback {
   min-height: 0;
   margin: 0;
@@ -349,20 +415,36 @@ select:focus {
 
 .feedback:not(:empty) {
   margin: 0 0 11px;
+  padding: 7px 10px;
+  border-radius: 5px;
+  background: #edf2eb;
+  animation: appear 180ms ease-out;
 }
 
 .calendar-empty-state {
-  margin: 0 0 10px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px dashed #d9d8cf;
+  border-radius: 6px;
   color: var(--muted);
   font-size: 10px;
+  text-align: center;
 }
 
 .calendar-legend {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 7px 14px;
+  justify-content: space-between;
+  gap: 7px 18px;
   margin: 0 0 13px;
+}
+
+.legend-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px 14px;
 }
 
 .legend-item {
@@ -407,6 +489,30 @@ select:focus {
 
 .legend-dot {
   background: var(--network-color);
+}
+
+.status-idee {
+  --status-color: var(--status-idee);
+}
+
+.status-redige {
+  --status-color: var(--status-redige);
+}
+
+.status-publie {
+  --status-color: var(--status-publie);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border: 2px solid var(--status-color);
+  border-radius: 50%;
+}
+
+.status-dot.status-publie {
+  background: var(--status-color);
 }
 
 .calendar-scroll {
@@ -529,6 +635,49 @@ select:focus {
   -webkit-line-clamp: 2;
 }
 
+.calendar-event.status-idee {
+  border-left-style: dashed;
+}
+
+.calendar-event.status-publie {
+  background: color-mix(in srgb, var(--network-soft) 45%, #fff);
+}
+
+.calendar-event.status-publie .event-subject {
+  color: #6a6c64;
+}
+
+.event-status-control {
+  width: auto;
+  max-width: 100%;
+  height: 17px;
+  margin-top: 5px;
+  padding: 0 15px 0 6px;
+  appearance: none;
+  border: 1px solid color-mix(in srgb, var(--status-color) 35%, transparent);
+  border-radius: 20px;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M1 1l3 3 3-3' fill='none' stroke='%23777970' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 5px center;
+  color: var(--status-color);
+  cursor: pointer;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.event-status-control.status-publie {
+  border-color: var(--status-color);
+  background-color: #edf2eb;
+}
+
+.event-status-control:hover {
+  border-color: var(--status-color);
+}
+
+.event-status-control:focus {
+  border-color: var(--status-color);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--status-color) 22%, transparent);
+}
+
 .event-remove {
   position: absolute;
   top: 2px;
@@ -538,18 +687,31 @@ select:focus {
   display: grid;
   place-items: center;
   border: 0;
+  border-radius: 50%;
   background: transparent;
   color: #66685f;
   cursor: pointer;
   font: inherit;
   font-size: 14px;
   line-height: 1;
+  opacity: 0.45;
+  transition: opacity 150ms ease, background 150ms ease, color 150ms ease;
+}
+
+.calendar-event:hover .event-remove,
+.calendar-event:focus-within .event-remove {
+  opacity: 1;
 }
 
 .event-remove:hover {
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.9);
   color: #9d4935;
+}
+
+@media (hover: none) {
+  .event-remove {
+    opacity: 1;
+  }
 }
 
 .page-footnote {
@@ -586,6 +748,10 @@ select:focus {
   .panel {
     padding: 22px;
   }
+
+  .calendar-legend {
+    justify-content: flex-start;
+  }
 }
 
 @media (max-width: 420px) {
@@ -621,8 +787,25 @@ select:focus {
     font-size: 9px;
   }
 
-  .calendar-legend {
+  .calendar-legend,
+  .legend-group {
     gap: 7px 9px;
+  }
+
+  .calendar-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 10px;
+  }
+
+  .reset-filters-button {
+    grid-column: 1 / -1;
+    justify-self: start;
+    height: 26px;
+    padding: 0;
+  }
+
+  .reset-filters-button:hover {
+    background: transparent;
   }
 
   .calendar-table {

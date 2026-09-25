@@ -92,18 +92,48 @@
         </div>
 
         <div class="calendar-summary">
-          <p class="list-description">Retrouve tes publications par jour et par réseau social.</p>
-          <span id="publication-count" class="count-badge" aria-label="0 publication au total">0</span>
+          <p class="list-description">Retrouve et organise tes publications par date, réseau et statut.</p>
+          <span id="publication-count" class="count-badge" aria-label="0 publication affichée ce mois-ci">0</span>
+        </div>
+        <div class="calendar-filters" role="group" aria-label="Filtres des publications">
+          <div class="filter-field">
+            <label for="network-filter">Réseau</label>
+            <select id="network-filter">
+              <option value="">Tous les réseaux</option>
+              <option value="Instagram">Instagram</option>
+              <option value="LinkedIn">LinkedIn</option>
+              <option value="TikTok">TikTok</option>
+              <option value="Facebook">Facebook</option>
+              <option value="X">X</option>
+            </select>
+          </div>
+          <div class="filter-field">
+            <label for="status-filter">Statut</label>
+            <select id="status-filter">
+              <option value="">Tous les statuts</option>
+              <option value="Idée">Idée</option>
+              <option value="Rédigé">Rédigé</option>
+              <option value="Publié">Publié</option>
+            </select>
+          </div>
+          <button id="reset-filters" class="reset-filters-button is-hidden" type="button">Réinitialiser</button>
         </div>
         <p id="form-feedback" class="feedback" role="status" aria-live="polite"></p>
         <p id="calendar-empty-state" class="calendar-empty-state is-hidden" role="status"></p>
 
-        <div class="calendar-legend" aria-label="Code couleur des réseaux sociaux">
-          <span class="legend-item"><span class="legend-dot network-instagram"></span>Instagram</span>
-          <span class="legend-item"><span class="legend-dot network-linkedin"></span>LinkedIn</span>
-          <span class="legend-item"><span class="legend-dot network-tiktok"></span>TikTok</span>
-          <span class="legend-item"><span class="legend-dot network-facebook"></span>Facebook</span>
-          <span class="legend-item"><span class="legend-dot network-x"></span>X</span>
+        <div class="calendar-legend">
+          <div class="legend-group" role="group" aria-label="Code couleur des réseaux sociaux">
+            <span class="legend-item"><span class="legend-dot network-instagram"></span>Instagram</span>
+            <span class="legend-item"><span class="legend-dot network-linkedin"></span>LinkedIn</span>
+            <span class="legend-item"><span class="legend-dot network-tiktok"></span>TikTok</span>
+            <span class="legend-item"><span class="legend-dot network-facebook"></span>Facebook</span>
+            <span class="legend-item"><span class="legend-dot network-x"></span>X</span>
+          </div>
+          <div class="legend-group legend-statuses" role="group" aria-label="Code couleur des statuts">
+            <span class="legend-item"><span class="status-dot status-idee"></span>Idée</span>
+            <span class="legend-item"><span class="status-dot status-redige"></span>Rédigé</span>
+            <span class="legend-item"><span class="status-dot status-publie"></span>Publié</span>
+          </div>
         </div>
 
         <div class="calendar-scroll" tabindex="0" aria-label="Calendrier du mois. Sur petit écran, faire défiler horizontalement.">
