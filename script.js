@@ -1,11 +1,23 @@
 const form = document.querySelector("#publication-form");
-const publicationList = document.querySelector("#publication-list");
 const publicationCount = document.querySelector("#publication-count");
-const emptyState = document.querySelector("#empty-state");
 const formFeedback = document.querySelector("#form-feedback");
 const dateInput = document.querySelector("#publication-date");
+const calendarMonthTitle = document.querySelector("#calendar-month-title");
+const calendarDays = document.querySelector("#calendar-days");
+const calendarEmptyState = document.querySelector("#calendar-empty-state");
+const previousMonthButton = document.querySelector("#previous-month");
+const currentMonthButton = document.querySelector("#current-month");
+const nextMonthButton = document.querySelector("#next-month");
 
 const publications = [];
+const networkClassNames = {
+  Instagram: "network-instagram",
+  LinkedIn: "network-linkedin",
+  TikTok: "network-tiktok",
+  Facebook: "network-facebook",
+  X: "network-x",
+};
+let viewedMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
 function formatDateParts(dateValue) {
   const [year, month, day] = dateValue.split("-").map(Number);
@@ -22,73 +34,128 @@ function formatDateParts(dateValue) {
   };
 }
 
-function renderPublications() {
-  publicationList.replaceChildren();
+function toDateValue(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
 
-  const orderedPublications = [...publications].sort((a, b) => a.date.localeCompare(b.date));
+function networkClass(network) {
+  return networkClassNames[network] || "network-x";
+}
 
-  for (const publication of orderedPublications) {
-    const dateParts = formatDateParts(publication.date);
-    const item = document.createElement("li");
-    item.className = "publication-card";
+function createCalendarEvent(publication, dateParts) {
+  const event = document.createElement("article");
+  event.className = `calendar-event ${networkClass(publication.network)}`;
+  event.setAttribute("aria-label", `${publication.network} : ${publication.subject}, ${dateParts.full}`);
+  event.title = `${publication.network} — ${publication.subject}${publication.format ? ` · ${publication.format}` : ""}`;
 
-    const dateTile = document.createElement("div");
-    dateTile.className = "date-tile";
-    dateTile.setAttribute("aria-label", dateParts.full);
+  const network = document.createElement("span");
+  network.className = "event-network";
+  network.textContent = publication.network;
 
-    const dateDay = document.createElement("span");
-    dateDay.className = "date-day";
-    dateDay.textContent = dateParts.day;
+  const subject = document.createElement("span");
+  subject.className = "event-subject";
+  subject.textContent = publication.subject;
 
-    const dateMonth = document.createElement("span");
-    dateMonth.className = "date-month";
-    dateMonth.textContent = dateParts.month;
-    dateTile.append(dateDay, dateMonth);
-
-    const details = document.createElement("div");
-    details.className = "publication-details";
-
-    const subject = document.createElement("p");
-    subject.className = "publication-subject";
-    subject.textContent = publication.subject;
-    subject.title = publication.subject;
-
-    const meta = document.createElement("div");
-    meta.className = "publication-meta";
-
-    const network = document.createElement("span");
-    network.className = "network-tag";
-    network.textContent = publication.network;
-    meta.append(network);
-
-    if (publication.format) {
-      const format = document.createElement("span");
-      format.textContent = publication.format;
-      meta.append(format);
+  const removeButton = document.createElement("button");
+  removeButton.className = "event-remove";
+  removeButton.type = "button";
+  removeButton.textContent = "×";
+  removeButton.title = "Supprimer cette publication";
+  removeButton.setAttribute("aria-label", `Supprimer : ${publication.subject}`);
+  removeButton.addEventListener("click", () => {
+    const index = publications.findIndex((entry) => entry.id === publication.id);
+    if (index !== -1) {
+      publications.splice(index, 1);
+      renderCalendar();
+      formFeedback.textContent = "Publication supprimée.";
     }
+  });
 
-    details.append(subject, meta);
+  event.append(network, subject, removeButton);
+  return event;
+}
 
-    const removeButton = document.createElement("button");
-    removeButton.className = "remove-button";
-    removeButton.type = "button";
-    removeButton.textContent = "Supprimer";
-    removeButton.setAttribute("aria-label", `Supprimer : ${publication.subject}`);
-    removeButton.addEventListener("click", () => {
-      const index = publications.findIndex((entry) => entry.id === publication.id);
-      if (index !== -1) {
-        publications.splice(index, 1);
-        renderPublications();
-        formFeedback.textContent = "Publication supprimée.";
-      }
-    });
+function renderCalendar() {
+  const year = viewedMonth.getFullYear();
+  const month = viewedMonth.getMonth();
+  const monthLabel = new Intl.DateTimeFormat("fr-FR", {
+    month: "long",
+    year: "numeric",
+  }).format(viewedMonth);
+  calendarMonthTitle.textContent = monthLabel;
+  calendarDays.replaceChildren();
+  publicationCount.textContent = String(publications.length);
+  publicationCount.setAttribute(
+    "aria-label",
+    `${publications.length} publication${publications.length === 1 ? "" : "s"} au total`,
+  );
 
-    item.append(dateTile, details, removeButton);
-    publicationList.append(item);
+  const firstWeekday = (new Date(year, month, 1).getDay() + 6) % 7;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const numberOfCells = Math.ceil((firstWeekday + daysInMonth) / 7) * 7;
+  const publicationsByDate = new Map();
+
+  for (const publication of publications) {
+    const datePublications = publicationsByDate.get(publication.date) || [];
+    datePublications.push(publication);
+    publicationsByDate.set(publication.date, datePublications);
   }
 
-  publicationCount.textContent = String(publications.length);
-  emptyState.classList.toggle("is-hidden", publications.length > 0);
+  const todayValue = getLocalDateValue();
+  let publicationsInMonth = 0;
+
+  for (let weekStart = 0; weekStart < numberOfCells; weekStart += 7) {
+    const row = document.createElement("tr");
+
+    for (let weekday = 0; weekday < 7; weekday += 1) {
+      const cellIndex = weekStart + weekday;
+      const date = new Date(year, month, cellIndex - firstWeekday + 1);
+      const dateValue = toDateValue(date);
+      const inCurrentMonth = date.getMonth() === month;
+      const dateParts = formatDateParts(dateValue);
+      const cell = document.createElement("td");
+      cell.className = `calendar-day${inCurrentMonth ? "" : " is-adjacent-month"}${dateValue === todayValue ? " is-today" : ""}`;
+
+      const dayHeading = document.createElement("div");
+      dayHeading.className = "calendar-day-heading";
+
+      const dateNumber = document.createElement("time");
+      dateNumber.className = "calendar-date-number";
+      dateNumber.dateTime = dateValue;
+      dateNumber.textContent = String(date.getDate());
+      dayHeading.append(dateNumber);
+
+      if (!inCurrentMonth) {
+        const adjacentMonth = document.createElement("span");
+        adjacentMonth.className = "adjacent-month-name";
+        adjacentMonth.textContent = dateParts.month;
+        dayHeading.append(adjacentMonth);
+      }
+
+      cell.append(dayHeading);
+
+      const datePublications = publicationsByDate.get(dateValue) || [];
+      if (inCurrentMonth) publicationsInMonth += datePublications.length;
+
+      for (const publication of datePublications) {
+        cell.append(createCalendarEvent(publication, dateParts));
+      }
+
+      cell.setAttribute(
+        "aria-label",
+        `${dateParts.full}${datePublications.length ? `, ${datePublications.length} publication${datePublications.length === 1 ? "" : "s"}` : ""}`,
+      );
+      row.append(cell);
+    }
+
+    calendarDays.append(row);
+  }
+
+  calendarEmptyState.textContent = `Aucune publication prévue en ${monthLabel}. Ajoute un contenu pour le voir apparaître ici.`;
+  calendarEmptyState.classList.toggle("is-hidden", publicationsInMonth > 0);
 }
 
 function getLocalDateValue(date = new Date()) {
@@ -97,6 +164,22 @@ function getLocalDateValue(date = new Date()) {
 }
 
 dateInput.value = getLocalDateValue();
+
+previousMonthButton.addEventListener("click", () => {
+  viewedMonth = new Date(viewedMonth.getFullYear(), viewedMonth.getMonth() - 1, 1);
+  renderCalendar();
+});
+
+currentMonthButton.addEventListener("click", () => {
+  const today = new Date();
+  viewedMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  renderCalendar();
+});
+
+nextMonthButton.addEventListener("click", () => {
+  viewedMonth = new Date(viewedMonth.getFullYear(), viewedMonth.getMonth() + 1, 1);
+  renderCalendar();
+});
 
 form.addEventListener("submit", (event) => {
   event.preventDefault();
@@ -121,10 +204,14 @@ form.addEventListener("submit", (event) => {
   }
 
   publications.push(publication);
-  renderPublications();
+  const [year, month] = publication.date.split("-").map(Number);
+  viewedMonth = new Date(year, month - 1, 1);
+  renderCalendar();
   formFeedback.textContent = `« ${publication.subject} » a été ajoutée.`;
 
   form.elements.subject.value = "";
   form.elements.format.value = "";
   form.elements.subject.focus();
 });
+
+renderCalendar();

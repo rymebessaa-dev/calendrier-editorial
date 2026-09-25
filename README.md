@@ -14,7 +14,7 @@ Ouvrir `index.html` dans un navigateur, ou cliquer sur **Run** dans Replit.
 ## Avancement
 - [x] Lot 0 : squelette
 - [x] Lot 1 : ajout de publications
-- [ ] Lot 2 : vue calendrier
+- [x] Lot 2 : vue calendrier
 - [ ] Lot 3 : statuts, suppression, filtres
 - [ ] Lot 4 : sauvegarde et design
 
