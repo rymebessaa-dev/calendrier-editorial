@@ -15,14 +15,28 @@ const statusCounters = document.querySelectorAll(".status-counter");
 const monthProgressFill = document.querySelector("#month-progress-fill");
 const monthProgressLabel = document.querySelector("#month-progress-label");
 const saveStatus = document.querySelector("#save-status");
+const appView = document.querySelector("#app-view");
+const authView = document.querySelector("#auth-view");
+const authForm = document.querySelector("#auth-form");
+const authTitle = document.querySelector("#auth-title");
+const authFeedback = document.querySelector("#auth-feedback");
+const authSubmit = document.querySelector("#auth-submit");
+const authSubmitLabel = document.querySelector("#auth-submit-label");
+const authPassword = document.querySelector("#auth-password");
+const passwordHint = document.querySelector("#password-hint");
+const loginTab = document.querySelector("#login-tab");
+const signupTab = document.querySelector("#signup-tab");
+const headerNote = document.querySelector("#header-note");
+const account = document.querySelector("#account");
+const accountEmail = document.querySelector("#account-email");
+const logoutButton = document.querySelector("#logout-button");
 
-const STORAGE_KEY = "calendrier-editorial.publications";
-const MIGRATION_KEY = "calendrier-editorial.migrated-to-supabase";
-const API_URL = "/api/publications";
+// Anciennes publications enregistrées dans le navigateur, avant les comptes.
+const LEGACY_STORAGE_KEY = "calendrier-editorial.publications";
+const API_URL = "/api";
 const statuses = ["Idée", "Rédigé", "Publié"];
-const publications = loadPublications();
-// Passe à true une fois le serveur joint et Supabase configuré.
-let isOnline = false;
+const publications = [];
+let authMode = "login";
 const networkClassNames = {
   Instagram: "network-instagram",
   LinkedIn: "network-linkedin",
@@ -46,13 +60,10 @@ function isValidPublication(publication) {
     && statuses.includes(publication.status);
 }
 
-function loadPublications() {
+function readLegacyPublications() {
   try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    if (!Array.isArray(saved)) return [];
-    return saved
-      .filter(isValidPublication)
-      .map((publication) => ({ ...publication, format: publication.format || "" }));
+    const saved = JSON.parse(localStorage.getItem(LEGACY_STORAGE_KEY) || "[]");
+    return Array.isArray(saved) ? saved.filter(isValidPublication) : [];
   } catch {
     return [];
   }
@@ -63,17 +74,9 @@ function setSaveStatus(message, isError = false) {
   saveStatus.classList.toggle("is-error", isError);
 }
 
-function savePublications() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(publications));
-    if (!isOnline) {
-      setSaveStatus("Tes publications sont sauvegardées automatiquement dans ce navigateur.");
-    }
-  } catch {
-    if (!isOnline) {
-      setSaveStatus("Sauvegarde impossible dans ce navigateur : tes publications seront perdues à la fermeture de la page.", true);
-    }
-  }
+function setAuthFeedback(message, isError = false) {
+  authFeedback.textContent = message;
+  authFeedback.classList.toggle("is-error", isError);
 }
 
 function toPublication(row) {
@@ -87,44 +90,51 @@ function toPublication(row) {
   };
 }
 
-// Appelle l'API du serveur, qui transmet à Supabase avec la clé secrète.
+// Appelle l'API du serveur. La session est portée par un cookie httpOnly.
 async function callApi(path, method = "GET", body) {
   const response = await fetch(`${API_URL}${path}`, {
     method,
+    credentials: "same-origin",
     headers: body === undefined ? {} : { "Content-Type": "application/json" },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
+  const data = response.status === 204 ? null : await response.json().catch(() => null);
+
   if (!response.ok) {
-    const error = new Error(`Erreur ${response.status} sur ${method} ${API_URL}${path}`);
+    const error = new Error(data?.error || `Erreur ${response.status} sur ${method} ${API_URL}${path}`);
     error.status = response.status;
+    if (response.status === 401 && path.startsWith("/publications")) {
+      showAuth("Ta session a expiré. Reconnecte-toi.", true);
+    }
     throw error;
   }
-  return response.status === 204 ? null : response.json();
+  return data;
 }
 
-async function migrateLocalPublications() {
-  if (localStorage.getItem(MIGRATION_KEY) || publications.length === 0) return;
+async function importLegacyPublications() {
+  const legacyPublications = readLegacyPublications();
+  if (legacyPublications.length === 0) return;
 
-  await callApi("/import", "POST", publications);
-  localStorage.setItem(MIGRATION_KEY, "1");
-}
-
-async function syncFromSupabase() {
-  setSaveStatus("Synchronisation avec Supabase…");
+  await callApi("/publications/import", "POST", legacyPublications);
   try {
-    await migrateLocalPublications();
-    const data = await callApi("");
-    isOnline = true;
+    localStorage.removeItem(LEGACY_STORAGE_KEY);
+  } catch {
+    // Rien à faire : l'import sera simplement ignoré la prochaine fois (doublons évités par l'id).
+  }
+}
+
+async function loadPublications() {
+  setSaveStatus("Chargement de tes publications…");
+  try {
+    await importLegacyPublications();
+    const data = await callApi("/publications");
     publications.splice(0, publications.length, ...data.map(toPublication).filter(isValidPublication));
-    savePublications();
     renderCalendar();
     setSaveStatus("Tes publications sont sauvegardées en ligne (Supabase).");
   } catch (error) {
-    // 503 : Supabase n'est pas configuré sur le serveur, on reste en mode navigateur.
-    savePublications();
-    if (error.status !== 503) {
-      console.error(error);
-      setSaveStatus("Connexion à Supabase impossible : affichage de la copie enregistrée dans ce navigateur.", true);
+    console.error(error);
+    if (error.status !== 401) {
+      setSaveStatus("Impossible de charger tes publications. Recharge la page.", true);
     }
   }
 }
@@ -132,9 +142,7 @@ async function syncFromSupabase() {
 // Applique le changement tout de suite à l'écran, puis l'envoie au serveur.
 // En cas d'échec, `rollback` annule le changement local.
 async function persistChange(sendToServer, rollback) {
-  savePublications();
   renderCalendar();
-  if (!isOnline) return;
 
   try {
     await sendToServer();
@@ -142,9 +150,60 @@ async function persistChange(sendToServer, rollback) {
   } catch (error) {
     console.error(error);
     rollback();
-    savePublications();
     renderCalendar();
-    setSaveStatus("La modification n'a pas pu être enregistrée sur Supabase. Réessaie.", true);
+    if (error.status !== 401) {
+      setSaveStatus("La modification n'a pas pu être enregistrée sur Supabase. Réessaie.", true);
+    }
+  }
+}
+
+function showApp(email) {
+  accountEmail.textContent = email;
+  account.classList.remove("is-hidden");
+  headerNote.classList.add("is-hidden");
+  authView.classList.add("is-hidden");
+  appView.classList.remove("is-hidden");
+  saveStatus.classList.remove("is-hidden");
+  formFeedback.textContent = "";
+  loadPublications();
+}
+
+function showAuth(message = "", isError = false) {
+  publications.splice(0, publications.length);
+  account.classList.add("is-hidden");
+  headerNote.classList.remove("is-hidden");
+  appView.classList.add("is-hidden");
+  saveStatus.classList.add("is-hidden");
+  authView.classList.remove("is-hidden");
+  setAuthFeedback(message, isError);
+}
+
+function setAuthMode(mode) {
+  authMode = mode;
+  const isSignup = mode === "signup";
+  loginTab.setAttribute("aria-pressed", String(!isSignup));
+  signupTab.setAttribute("aria-pressed", String(isSignup));
+  authTitle.textContent = isSignup ? "Créer un compte" : "Se connecter";
+  authSubmitLabel.textContent = isSignup ? "Créer mon compte" : "Se connecter";
+  authPassword.autocomplete = isSignup ? "new-password" : "current-password";
+  passwordHint.classList.toggle("is-hidden", !isSignup);
+  setAuthFeedback("");
+}
+
+async function initAuth() {
+  const params = new URLSearchParams(window.location.search);
+  const authResult = params.get("auth");
+  if (authResult) window.history.replaceState(null, "", window.location.pathname);
+
+  try {
+    const user = await callApi("/auth/me");
+    showApp(user.email);
+    if (authResult === "confirmed") setSaveStatus("Email confirmé : bienvenue !");
+  } catch {
+    showAuth(
+      authResult === "error" ? "Le lien de confirmation est invalide ou a expiré. Connecte-toi ou recrée un compte." : "",
+      authResult === "error",
+    );
   }
 }
 
@@ -435,5 +494,50 @@ form.addEventListener("submit", (event) => {
   form.elements.subject.focus();
 });
 
+loginTab.addEventListener("click", () => setAuthMode("login"));
+signupTab.addEventListener("click", () => setAuthMode("signup"));
+
+authForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!authForm.reportValidity()) return;
+
+  const credentials = {
+    email: authForm.elements.email.value,
+    password: authForm.elements.password.value,
+  };
+  authSubmit.disabled = true;
+  setAuthFeedback(authMode === "signup" ? "Création du compte…" : "Connexion…");
+
+  try {
+    if (authMode === "signup") {
+      const result = await callApi("/auth/signup", "POST", credentials);
+      if (result.needsConfirmation) {
+        setAuthMode("login");
+        setAuthFeedback("Compte créé ! Clique sur le lien reçu par email pour l'activer, puis connecte-toi.");
+        return;
+      }
+      authForm.reset();
+      showApp(result.email);
+    } else {
+      const user = await callApi("/auth/login", "POST", credentials);
+      authForm.reset();
+      showApp(user.email);
+    }
+  } catch (error) {
+    setAuthFeedback(error.message, true);
+  } finally {
+    authSubmit.disabled = false;
+  }
+});
+
+logoutButton.addEventListener("click", async () => {
+  try {
+    await callApi("/auth/logout", "POST");
+  } finally {
+    setAuthMode("login");
+    showAuth("Déconnexion réussie.");
+  }
+});
+
 renderCalendar();
-syncFromSupabase();
+initAuth();

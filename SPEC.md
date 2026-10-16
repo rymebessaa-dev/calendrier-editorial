@@ -25,15 +25,18 @@ Une personne qui gère des réseaux sociaux (community manager, étudiante en ma
 5. Supprimer une publication.
 6. Filtrer par réseau et par statut.
 7. Compteurs du mois : nombre de publications par statut.
-8. Sauvegarde automatique en ligne dans Supabase, avec une copie dans le navigateur.
+8. Sauvegarde automatique en ligne dans Supabase.
+9. Compte personnel (email + mot de passe) : inscription, connexion, déconnexion.
+   Chaque utilisateur ne voit que ses propres publications.
 
 ## Hors périmètre
-- Pas de compte utilisateur, pas de serveur à nous (la base est hébergée par Supabase).
+- Pas de connexion via Google, Facebook, etc. (email + mot de passe uniquement).
 - Pas d'API : on ne publie pas réellement sur les réseaux.
 
 ## Technique
 - HTML + CSS + JavaScript, sans framework.
 - Front : `public/index.html`, `public/style.css`, `public/script.js`.
-- Serveur : `server.js` (Express) sert `public/` et expose l'API `/api/publications`, qui accède à Supabase avec la clé secrète lue dans `.env` (dotenv).
+- Serveur : `server.js` (Express) sert `public/` et expose l'API `/api/auth/…` et `/api/publications`. Configuration lue dans `.env` (dotenv).
+- Authentification : Supabase Auth via `@supabase/ssr`, session dans un cookie `httpOnly`.
 - Base : `supabase/schema.sql`.
-- Sauvegarde : table `publications` dans Supabase (accès uniquement côté serveur via `@supabase/supabase-js`), avec `localStorage` comme copie de secours.
+- Sauvegarde : table `publications` dans Supabase, protégée par une RLS (`auth.uid() = user_id`).
