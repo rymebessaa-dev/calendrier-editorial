@@ -17,8 +17,12 @@ const monthProgressLabel = document.querySelector("#month-progress-label");
 const saveStatus = document.querySelector("#save-status");
 
 const STORAGE_KEY = "calendrier-editorial.publications";
+const MIGRATION_KEY = "calendrier-editorial.migrated-to-supabase";
+const API_URL = "/api/publications";
 const statuses = ["Idée", "Rédigé", "Publié"];
 const publications = loadPublications();
+// Passe à true une fois le serveur joint et Supabase configuré.
+let isOnline = false;
 const networkClassNames = {
   Instagram: "network-instagram",
   LinkedIn: "network-linkedin",
@@ -54,14 +58,93 @@ function loadPublications() {
   }
 }
 
+function setSaveStatus(message, isError = false) {
+  saveStatus.textContent = message;
+  saveStatus.classList.toggle("is-error", isError);
+}
+
 function savePublications() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(publications));
-    saveStatus.textContent = "Tes publications sont sauvegardées automatiquement dans ce navigateur.";
-    saveStatus.classList.remove("is-error");
+    if (!isOnline) {
+      setSaveStatus("Tes publications sont sauvegardées automatiquement dans ce navigateur.");
+    }
   } catch {
-    saveStatus.textContent = "Sauvegarde impossible dans ce navigateur : tes publications seront perdues à la fermeture de la page.";
-    saveStatus.classList.add("is-error");
+    if (!isOnline) {
+      setSaveStatus("Sauvegarde impossible dans ce navigateur : tes publications seront perdues à la fermeture de la page.", true);
+    }
+  }
+}
+
+function toPublication(row) {
+  return {
+    id: row.id,
+    date: row.date,
+    network: row.network,
+    subject: row.subject,
+    format: row.format || "",
+    status: row.status,
+  };
+}
+
+// Appelle l'API du serveur, qui transmet à Supabase avec la clé secrète.
+async function callApi(path, method = "GET", body) {
+  const response = await fetch(`${API_URL}${path}`, {
+    method,
+    headers: body === undefined ? {} : { "Content-Type": "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  if (!response.ok) {
+    const error = new Error(`Erreur ${response.status} sur ${method} ${API_URL}${path}`);
+    error.status = response.status;
+    throw error;
+  }
+  return response.status === 204 ? null : response.json();
+}
+
+async function migrateLocalPublications() {
+  if (localStorage.getItem(MIGRATION_KEY) || publications.length === 0) return;
+
+  await callApi("/import", "POST", publications);
+  localStorage.setItem(MIGRATION_KEY, "1");
+}
+
+async function syncFromSupabase() {
+  setSaveStatus("Synchronisation avec Supabase…");
+  try {
+    await migrateLocalPublications();
+    const data = await callApi("");
+    isOnline = true;
+    publications.splice(0, publications.length, ...data.map(toPublication).filter(isValidPublication));
+    savePublications();
+    renderCalendar();
+    setSaveStatus("Tes publications sont sauvegardées en ligne (Supabase).");
+  } catch (error) {
+    // 503 : Supabase n'est pas configuré sur le serveur, on reste en mode navigateur.
+    savePublications();
+    if (error.status !== 503) {
+      console.error(error);
+      setSaveStatus("Connexion à Supabase impossible : affichage de la copie enregistrée dans ce navigateur.", true);
+    }
+  }
+}
+
+// Applique le changement tout de suite à l'écran, puis l'envoie au serveur.
+// En cas d'échec, `rollback` annule le changement local.
+async function persistChange(sendToServer, rollback) {
+  savePublications();
+  renderCalendar();
+  if (!isOnline) return;
+
+  try {
+    await sendToServer();
+    setSaveStatus("Tes publications sont sauvegardées en ligne (Supabase).");
+  } catch (error) {
+    console.error(error);
+    rollback();
+    savePublications();
+    renderCalendar();
+    setSaveStatus("La modification n'a pas pu être enregistrée sur Supabase. Réessaie.", true);
   }
 }
 
@@ -123,10 +206,14 @@ function createCalendarEvent(publication, dateParts) {
 
   statusControl.value = publication.status;
   statusControl.addEventListener("change", () => {
-    publication.status = statusControl.value;
-    savePublications();
-    renderCalendar();
-    formFeedback.textContent = `Statut de « ${publication.subject} » mis à jour : ${publication.status}.`;
+    const previousStatus = publication.status;
+    const newStatus = statusControl.value;
+    publication.status = newStatus;
+    formFeedback.textContent = `Statut de « ${publication.subject} » mis à jour : ${newStatus}.`;
+    persistChange(
+      () => callApi(`/${publication.id}`, "PATCH", { status: newStatus }),
+      () => { publication.status = previousStatus; },
+    );
   });
 
   const removeButton = document.createElement("button");
@@ -139,9 +226,11 @@ function createCalendarEvent(publication, dateParts) {
     const index = publications.findIndex((entry) => entry.id === publication.id);
     if (index !== -1) {
       publications.splice(index, 1);
-      savePublications();
-      renderCalendar();
       formFeedback.textContent = "Publication supprimée.";
+      persistChange(
+        () => callApi(`/${publication.id}`, "DELETE"),
+        () => { publications.push(publication); },
+      );
     }
   });
 
@@ -328,13 +417,18 @@ form.addEventListener("submit", (event) => {
   }
 
   publications.push(publication);
-  savePublications();
   networkFilter.value = "";
   statusFilter.value = "";
   const [year, month] = publication.date.split("-").map(Number);
   viewedMonth = new Date(year, month - 1, 1);
-  renderCalendar();
   formFeedback.textContent = `« ${publication.subject} » a été ajoutée.`;
+  persistChange(
+    () => callApi("", "POST", publication),
+    () => {
+      const index = publications.findIndex((entry) => entry.id === publication.id);
+      if (index !== -1) publications.splice(index, 1);
+    },
+  );
 
   form.elements.subject.value = "";
   form.elements.format.value = "";
@@ -342,3 +436,4 @@ form.addEventListener("submit", (event) => {
 });
 
 renderCalendar();
+syncFromSupabase();

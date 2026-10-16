@@ -25,13 +25,15 @@ Une personne qui gère des réseaux sociaux (community manager, étudiante en ma
 5. Supprimer une publication.
 6. Filtrer par réseau et par statut.
 7. Compteurs du mois : nombre de publications par statut.
-8. Sauvegarde automatique dans le navigateur (les données restent après fermeture).
+8. Sauvegarde automatique en ligne dans Supabase, avec une copie dans le navigateur.
 
 ## Hors périmètre
-- Pas de compte utilisateur, pas de serveur, pas de base de données.
+- Pas de compte utilisateur, pas de serveur à nous (la base est hébergée par Supabase).
 - Pas d'API : on ne publie pas réellement sur les réseaux.
 
 ## Technique
 - HTML + CSS + JavaScript, sans framework.
-- 3 fichiers : `index.html`, `style.css`, `script.js`.
-- Sauvegarde : `localStorage` du navigateur.
+- Front : `public/index.html`, `public/style.css`, `public/script.js`.
+- Serveur : `server.js` (Express) sert `public/` et expose l'API `/api/publications`, qui accède à Supabase avec la clé secrète lue dans `.env` (dotenv).
+- Base : `supabase/schema.sql`.
+- Sauvegarde : table `publications` dans Supabase (accès uniquement côté serveur via `@supabase/supabase-js`), avec `localStorage` comme copie de secours.
