@@ -270,7 +270,7 @@ function createCalendarEvent(publication, dateParts) {
     publication.status = newStatus;
     formFeedback.textContent = `Statut de « ${publication.subject} » mis à jour : ${newStatus}.`;
     persistChange(
-      () => callApi(`/${publication.id}`, "PATCH", { status: newStatus }),
+      () => callApi(`/publications/${publication.id}`, "PATCH", { status: newStatus }),
       () => { publication.status = previousStatus; },
     );
   });
@@ -287,7 +287,7 @@ function createCalendarEvent(publication, dateParts) {
       publications.splice(index, 1);
       formFeedback.textContent = "Publication supprimée.";
       persistChange(
-        () => callApi(`/${publication.id}`, "DELETE"),
+        () => callApi(`/publications/${publication.id}`, "DELETE"),
         () => { publications.push(publication); },
       );
     }
@@ -482,7 +482,7 @@ form.addEventListener("submit", (event) => {
   viewedMonth = new Date(year, month - 1, 1);
   formFeedback.textContent = `« ${publication.subject} » a été ajoutée.`;
   persistChange(
-    () => callApi("", "POST", publication),
+    () => callApi("/publications", "POST", publication),
     () => {
       const index = publications.findIndex((entry) => entry.id === publication.id);
       if (index !== -1) publications.splice(index, 1);
