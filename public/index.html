@@ -14,7 +14,11 @@
       <span class="brand-mark" aria-hidden="true">C</span>
       <span>studio social</span>
     </a>
-    <span class="header-note">TON ESPACE DE PLANIFICATION</span>
+    <span id="header-note" class="header-note">TON ESPACE DE PLANIFICATION</span>
+    <div id="account" class="account is-hidden">
+      <span id="account-email" class="account-email"></span>
+      <button id="logout-button" class="logout-button" type="button">Se déconnecter</button>
+    </div>
   </header>
 
   <main>
@@ -24,7 +28,42 @@
       <p class="intro-copy">Toutes tes idées de contenu au même endroit.</p>
     </section>
 
-    <div class="workspace">
+    <section id="auth-view" class="panel auth-panel is-hidden" aria-labelledby="auth-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">TON ESPACE</p>
+          <h2 id="auth-title">Se connecter</h2>
+        </div>
+        <span class="heading-icon" aria-hidden="true">→</span>
+      </div>
+
+      <div class="auth-tabs" role="group" aria-label="Choisir entre connexion et inscription">
+        <button id="login-tab" class="auth-tab" type="button" aria-pressed="true">Connexion</button>
+        <button id="signup-tab" class="auth-tab" type="button" aria-pressed="false">Créer un compte</button>
+      </div>
+
+      <form id="auth-form">
+        <div class="field">
+          <label for="auth-email">Email</label>
+          <input id="auth-email" name="email" type="email" autocomplete="email" required>
+        </div>
+
+        <div class="field">
+          <label for="auth-password">Mot de passe</label>
+          <input id="auth-password" name="password" type="password" autocomplete="current-password" minlength="8" required>
+          <p id="password-hint" class="form-hint is-hidden">8 caractères minimum.</p>
+        </div>
+
+        <p id="auth-feedback" class="feedback" role="status" aria-live="polite"></p>
+
+        <button id="auth-submit" class="submit-button" type="submit">
+          <span id="auth-submit-label">Se connecter</span>
+          <span aria-hidden="true">↗</span>
+        </button>
+      </form>
+    </section>
+
+    <div id="app-view" class="workspace is-hidden">
       <section class="panel form-panel" aria-labelledby="form-title">
         <div class="section-heading">
           <div>
@@ -176,7 +215,7 @@
       </section>
     </div>
 
-    <p id="save-status" class="page-footnote" role="status">Chargement des publications…</p>
+    <p id="save-status" class="page-footnote is-hidden" role="status">Chargement des publications…</p>
   </main>
 
   <script src="script.js"></script>
